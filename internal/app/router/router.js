@@ -1,9 +1,11 @@
 import UserDelivery from '../../pkg/user/delivery.js';
 import ForumDelivery from '../../pkg/forum/delivery.js';
+import ThreadDelivery from '../../pkg/thread/delivery.js';
 
 export const router = (app, pool) => {
     const userDelivery = new UserDelivery(pool);
     const forumDelivery = new ForumDelivery(pool);
+    const threadDelivery = new ThreadDelivery(pool);
 
     // app.get('*', function(req, res) {
     //     // kek();
@@ -30,7 +32,11 @@ export const router = (app, pool) => {
         forumDelivery.getForum(request, response);
     });
 
-    // app.post('*', function(req, res) {
-    //     console.log(req.originalUrl);
-    // });
+    app.post('/forum/:forum/create', (request, response) => {
+        threadDelivery.createThread(request, response);
+    });
+
+    app.get('/thread/:data/details', (request, response) => {
+        threadDelivery.getThread(request, response);
+    });
 };

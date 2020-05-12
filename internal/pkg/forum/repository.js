@@ -55,7 +55,8 @@ export default class ForumRepository {
      * @return {Object}
      */
     async _getForumBySlug(forum) {
-        const str = 'SELECT * FROM forum WHERE lower(slug) = $1';
+        const str = 'SELECT slug, "user", title, posts, threads' +
+            ' FROM forum WHERE lower(slug) = $1';
         const res = await query(this.pool, str, [
             forum.slug.toLowerCase(),
         ]);
