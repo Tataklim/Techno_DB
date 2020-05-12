@@ -3,6 +3,9 @@ export const query = async (pool, str, data) => {
     let res = {};
     try {
         res = await client.query(str, data);
+    } catch (error) {
+        console.log('               ERROR: ');
+        console.log(error);
     } finally {
         client.release();
     }

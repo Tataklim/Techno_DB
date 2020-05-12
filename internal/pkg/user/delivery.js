@@ -1,5 +1,5 @@
 import UserRepository from './repository.js';
-import {userModel} from '../models/user_model.js';
+import {userModel} from '../models/user.js';
 import {STATUSES} from '../../../config/constants.js';
 
 /**
@@ -27,22 +27,23 @@ export default class UserDelivery {
             request.body.email,
             request.body.about,
         );
-        const promise = this.repository.createUser(user);
-        promise.then((result) => {
-            switch (result.type) {
-            case STATUSES.SUCCESS:
-                response.status(201).send(result.body);
-                break;
-            case STATUSES.DUPLICATION:
-                response.status(409).send(result.body);
-                break;
-            default:
+        this.repository.createUser(user)
+            .then((result) => {
+                switch (result.type) {
+                case STATUSES.SUCCESS:
+                    response.status(201).send(result.body);
+                    break;
+                case STATUSES.DUPLICATION:
+                    response.status(409).send(result.body);
+                    break;
+                default:
+                    response.status(500);
+                    break;
+                }
+            })
+            .catch((error) => {
                 response.status(500);
-                break;
-            }
-        }).catch((error) => {
-            response.status(500);
-        });
+            });
     }
 
     /**

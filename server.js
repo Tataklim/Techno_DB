@@ -1,8 +1,3 @@
-// 1xx: Information
-// 2xx: Success
-// 3xx: Redirection
-// 4xx: Client Error
-// 5xx: Server Error
 import express from 'express';
 import bodyParser from 'body-parser';
 import db from 'pg';
@@ -19,7 +14,7 @@ const pool = new db.Pool({
     database: 'techno_db',
     password: 'postgres',
     port: 5432,
-});
+});// TODO вынести в константытыт
 
 router(app, pool);
 

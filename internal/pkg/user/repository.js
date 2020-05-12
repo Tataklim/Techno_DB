@@ -1,4 +1,4 @@
-import {responseModel} from '../models/response_model.js';
+import {responseModel} from '../models/response.js';
 import {STATUSES} from '../../../config/constants.js';
 import {query} from '../repository_helper/repository_helper.js';
 
@@ -32,7 +32,7 @@ export default class UserRepository {
      * @param {Object} user
      * @return {Object}
      */
-    async createUser(user = {lol: 'lol'}) {
+    async createUser(user) {
         const duplication = await this._checkUserDuplication(user);
         if (duplication !== false) {
             return responseModel(STATUSES.DUPLICATION, duplication);
@@ -90,7 +90,9 @@ export default class UserRepository {
      */
     async _getUserByName(user) {
         const str = 'SELECT * FROM users WHERE lower(nickname) = $1';
-        const res = await query(this.pool, str, [user.nickname.toLowerCase()]);
+        const res = await query(this.pool, str, [
+            user.nickname.toLowerCase(),
+        ]);
         return res.rowCount === 0 ? false : res.rows[0];
     }
 
@@ -101,7 +103,9 @@ export default class UserRepository {
      */
     async _getUserByEmail(user) {
         const str = 'SELECT * FROM users WHERE lower(email) = $1';
-        const res = await query(this.pool, str, [user.email.toLowerCase()]);
+        const res = await query(this.pool, str, [
+            user.email.toLowerCase(),
+        ]);
         return res.rowCount === 0 ? false : res.rows[0];
     }
 
@@ -110,7 +114,7 @@ export default class UserRepository {
      * @param {Object} user
      */
     async _updateUser(user) {
-        const str = 'UPDATE users SET fullname=$1, email = $2, about = $3 ' +
+        const str = 'UPDATE users SET fullname = $1, email = $2, about = $3 ' +
             'WHERE lower(nickname) =$4';
         await query(this.pool, str, [
             user.fullname,
