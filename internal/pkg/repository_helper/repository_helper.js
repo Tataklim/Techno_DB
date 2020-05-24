@@ -5,6 +5,7 @@ export const query = async (pool, str, data) => {
         res = await client.query(str, data);
     } catch (error) {
         console.log('               ERROR: ');
+        console.log(str);
         console.log(error);
         res.rowCount = 0;
     } finally {

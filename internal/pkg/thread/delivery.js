@@ -53,6 +53,15 @@ export default class ThreadDelivery {
     }
 
     /**
+     * Thread list getting
+     * @param {Object} request
+     * @param {Object} response
+     */
+    getThreadList(request, response) {
+
+    }
+
+    /**
      * Thread getting
      * @param {Object} request
      * @param {Object} response

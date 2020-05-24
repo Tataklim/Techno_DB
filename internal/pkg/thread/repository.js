@@ -26,8 +26,6 @@ export default class ThreadRepository {
     async createThread(thread) {
         if (thread.slug !== undefined) {
             const duplication = await this._getThreadBySlug(thread);
-            console.log('duplication');
-            console.log(duplication);
             if (duplication !== false) {
                 return responseModel(STATUSES.DUPLICATION, duplication);
             }
@@ -134,10 +132,6 @@ export default class ThreadRepository {
         }
         str += `$${len}) RETURNING id`;
         const res = await query(this.pool, str, array);
-        // if (res.rowCount === 0) {
-        //     console.log(thread);
-        //     console.log(res);
-        // }
         return res.rowCount === 0 ? false : res.rows[0];
     }
 }
