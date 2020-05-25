@@ -2,17 +2,17 @@ import express from 'express';
 import bodyParser from 'body-parser';
 import db from 'pg';
 import {router} from './internal/app/router/router.js';
-const hostname = '127.0.0.1';
+const hostname = '0.0.0.0';
 const port = 5000;
 
 const app = express();
 app.use(bodyParser.json());
 
 const pool = new db.Pool({
-    user: 'postgres',
+    user: 'docker',
     host: 'localhost',
-    database: 'techno_db',
-    password: 'postgres',
+    database: 'docker',
+    password: 'docker',
     port: 5432,
 });// TODO вынести в константытыт
 

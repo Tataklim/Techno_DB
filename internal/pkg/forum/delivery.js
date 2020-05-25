@@ -13,6 +13,37 @@ export default class ForumDelivery {
     constructor(pool) {
         this.repository = new ForumRepository(pool);
     }
+    /**
+     * User getting
+     * @param {Object} request
+     * @param {Object} response
+     */
+    getUserList(request, response) {
+        const limit = request.query.limit;
+        const since = request.query.since;
+        const desc = (request.query.desc === 'true');
+        this.repository.getUserList(request.params.slug, {
+            limit,
+            since,
+            desc,
+        })
+            .then((result) => {
+                switch (result.type) {
+                case STATUSES.SUCCESS:
+                    response.status(200).send(result.body);
+                    break;
+                case STATUSES.NOT_FOUND:
+                    response.status(404).send({message: result.body});
+                    break;
+                default:
+                    response.status(500);
+                    break;
+                }
+            })
+            .catch((error) => {
+                response.status(500);
+            });
+    }
 
     /**
      * Post creation

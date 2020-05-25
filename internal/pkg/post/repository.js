@@ -222,25 +222,8 @@ export default class RepositoryPost {
                 if (params.limit !== undefined) {
                     str = str.replace('order by id', 'order by id limit ' + params.limit);
                 }
-                // if (params.limit !== undefined) {
-                //     // str += 'WITH parents AS (SELECT id from post where parent = 0 and thread = $1 order by id limit $2)' +
-                //     //     ' SELECT p.id, p.author, p.created, p.forum, p."isEdited", p.message, p.parent, p.thread, p.arr from post p' +
-                //     //     ' where p.thread = $3 AND p.arr[1] IN (SELECT * from parents) order by p.arr, p.id';
-                //     // arr.push(thread);
-                //     // arr.push(thread);
-                //     str = str.replace('order by id', 'order by id limit ' + params.limit);
-                // } else {
-                //     // str += 'WITH parents AS (SELECT id from post where parent = 0 and thread = $1 order by id)' +
-                //     //     ' SELECT p.id, p.author, p.created, p.forum, p."isEdited", p.message, p.parent, p.thread, p.arr from post p' +
-                //     //     ' where p.thread = $2 AND p.arr[1] IN (SELECT * from parents) order by p.arr, p.id';
-                //     // arr.push(thread);
-                //     // arr.push(thread);
-                // }
             }
         }
-        console.log(str);
-        console.log(arr);
-        console.log(params);
         const res = await query(this.pool, str, arr);
         return responseModel(STATUSES.SUCCESS, res.rows);
     }

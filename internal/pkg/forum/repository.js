@@ -37,6 +37,51 @@ export default class ForumRepository {
     }
 
     /**
+     * Getting user list
+     * @param {String} slug
+     * @param {Object} params
+     * @return {Object}
+     */
+    async getUserList(slug, params) {
+        const checkForum = await this.getForum({slug});
+        if (checkForum.type === STATUSES.NOT_FOUND) {
+            return checkForum;
+        }
+
+        let str = 'with forum_users as (SELECT u.nickname, u.fullname, u.email, u.about from users u ' +
+            '    left join post p on u.nickname = p.author ' +
+            '    left join thread t on u.nickname = t.author ' +
+            '    where t.forum = $1 or p.forum = $2 group by u.nickname, u.fullname, u.email, u.about ' +
+            'order by u.nickname) ' +
+            'SELECT nickname, fullname, about, email FROM forum_users ';
+            // 'WHERE LOWER(nickname) > LOWER(\'mel.FoDE6e52KW33ju\') ' +
+            // 'ORDER BY nickname';
+        const arr = [
+            slug,
+            slug,
+        ];
+        if (params.since !== undefined) {
+            str += 'WHERE LOWER(nickname) > LOWER($' + (arr.length+1)+ ') ';
+            arr.push(params.since);
+            if (params.desc) {
+                str = str.replace('>', '<');
+            }
+        }
+        str += ' ORDER BY nickname ';
+        if (params.desc) {
+            str += ' desc ';
+        }
+        if (params.limit !== undefined) {
+            str += ' limit ' + params.limit;
+        }
+        const res = await query(this.pool, str, arr);
+        if (res.rowCount === 0) {
+            return responseModel(STATUSES.SUCCESS, []);
+        }
+        return responseModel(STATUSES.SUCCESS, res.rows);
+    }
+
+    /**
      * Getting user
      * @param {Object} forum
      * @return {Object}

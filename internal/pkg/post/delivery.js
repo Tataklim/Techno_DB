@@ -12,7 +12,6 @@ export default class PostDelivery {
      * @param {Object} pool
      */
     constructor(pool) {
-        // this.repository = new RepositoryPost(pool);
         this.useCase = new PostUseCase(pool);
     }
 
