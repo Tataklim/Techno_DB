@@ -30,7 +30,7 @@ RUN apt-get -y install curl gnupg
 RUN curl -sL https://deb.nodesource.com/setup_14.x  | bash -
 RUN apt-get -y install nodejs
 RUN apt-get install -y build-essential
-RUN npm install
+RUN cd /DB && npm install
 
 EXPOSE 5000
 
