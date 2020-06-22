@@ -1,6 +1,6 @@
 create extension if not exists citext;
 
-CREATE TABLE users
+CREATE UNLOGGED TABLE users
 (
     nickname citext COLLATE ucs_basic PRIMARY KEY,
     fullname varchar NOT NULL,
@@ -8,7 +8,7 @@ CREATE TABLE users
     about    varchar
 );
 
-CREATE TABLE forum
+CREATE UNLOGGED TABLE forum
 (
     slug    citext PRIMARY KEY,
     "user"  citext  NOT NULL,
@@ -18,7 +18,7 @@ CREATE TABLE forum
     FOREIGN KEY ("user") REFERENCES users (nickname)
 );
 
-CREATE TABLE thread
+CREATE UNLOGGED TABLE thread
 (
     "id"    SERIAL PRIMARY KEY,
     forum   citext  NOT NULL,
@@ -33,7 +33,7 @@ CREATE TABLE thread
 
 );
 
-CREATE TABLE post
+CREATE UNLOGGED TABLE post
 (
     id         SERIAL PRIMARY KEY,
     author     citext  NOT NULL,
@@ -49,7 +49,7 @@ CREATE TABLE post
     FOREIGN KEY (thread) REFERENCES thread (id)
 );
 
-create table votes
+CREATE UNLOGGED TABLE votes
 (
     author citext NOT NULL,
     thread int4   NOT NULL,
@@ -137,3 +137,17 @@ CREATE TRIGGER votes_change_trigger
     ON votes
     FOR EACH ROW
 EXECUTE PROCEDURE change_vote();
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_forum_slug  ON forum (slug);
+
+CREATE INDEX IF NOT EXISTS idx_threads_slug ON thread (slug);
+CREATE INDEX IF NOT EXISTS idx_threads_forum ON thread (forum);
+
+CREATE INDEX IF NOT EXISTS idx_posts_forum ON post (forum);
+CREATE INDEX IF NOT EXISTS idx_posts_thread_path ON post (thread, arr);
+CREATE INDEX IF NOT EXISTS idx_posts_thread_id ON post (thread, id);
+CREATE INDEX IF NOT EXISTS idx_posts_thread_id0 ON post (thread, id) WHERE parent = 0;
+CREATE INDEX IF NOT EXISTS idx_posts_thread_id_created ON post (id, created, thread);
+CREATE INDEX IF NOT EXISTS idx_posts_thread_path1_id ON post (thread, (arr[1]), id);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_votes_thread_nickname ON votes (thread, author);

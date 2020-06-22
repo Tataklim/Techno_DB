@@ -26,12 +26,12 @@ export default class ServiceRepository {
         const post = await query(this.pool, postStr, []);
         const thread = await query(this.pool, threadStr, []);
         const user = await query(this.pool, userStr, []);
-        console.log({
-            forum: parseInt(forum.rows[0].count),
-            post: parseInt(post.rows[0].count),
-            thread: parseInt(thread.rows[0].count),
-            user: parseInt(user.rows[0].count),
-        });
+        // console.log({
+        //     forum: parseInt(forum.rows[0].count),
+        //     post: parseInt(post.rows[0].count),
+        //     thread: parseInt(thread.rows[0].count),
+        //     user: parseInt(user.rows[0].count),
+        // });
         return responseModel(STATUSES.SUCCESS, {
             forum: parseInt(forum.rows[0].count),
             post: parseInt(post.rows[0].count),
