@@ -19,8 +19,8 @@ export default class RepositoryPost {
      * @param {Object} postList
      */
     async createPost(postList) {
-        const str = 'INSERT INTO post(author, created, forum, "isEdited", message, thread, parent) ' +
-            'VALUES ($1,$2, $3, $4, $5, $6, $7) RETURNING id';
+        const str = 'INSERT INTO post(author, created, forum, "isEdited", message, thread, parent, arr) ' +
+            'VALUES ($1,$2, $3, $4, $5, $6, $7, $8) RETURNING id';
         for (const elem of postList) {
             const arr = [
                 elem.author,
@@ -30,11 +30,11 @@ export default class RepositoryPost {
                 elem.message,
                 elem.thread,
                 elem.parent,
+                elem.arr,
             ];
             const id = await query(this.pool, str, arr);
             elem.id = id.rows[0].id;
         }
-
         return responseModel(STATUSES.SUCCESS, postList);
     }
 
@@ -79,16 +79,16 @@ export default class RepositoryPost {
      * @param {number} threadID
      */
     async checkParentPost(parentID, threadID) {
-        const str = 'SELECT * FROM post INNER JOIN thread t ' +
-            'ON post.thread = t.id WHERE post.id = $1 AND t.id = $2';
+        const str = 'SELECT arr, thread FROM post WHERE id = $1';
         const res = await query(this.pool, str, [
             parentID,
-            threadID,
         ]);
-        if (res.rowCount === 0) {
+
+        if (res.rowCount === 0 || res.rows[0].thread !== threadID) {
             return responseModel(STATUSES.NOT_FOUND, 'There is not parent post with this ID');
         }
-        return parentID;
+
+        return res.rows[0].arr;
     }
 
     /**
@@ -102,6 +102,152 @@ export default class RepositoryPost {
             id,
         ]);
         return res.rowCount === 0 ? false : res.rows[0];
+    }
+
+    /**
+     * tree sort
+     * @param {String} thread
+     * @param {Object} params
+     */
+    async treeSort(thread, params) {
+        let str = '';
+        const arr = [];
+        if (params.since !== undefined) {
+            if (params.desc) {
+                str = `SELECT id, author, parent, message, forum, thread, created
+                       FROM post
+                       WHERE thread = $1
+                         AND (arr < (SELECT arr FROM post WHERE id = $2))
+                       ORDER BY arr desc`;
+                arr.push(thread);
+                arr.push(params.since);
+            } else {
+                str = `SELECT id, author, parent, message, forum, thread, created
+                       FROM post
+                       WHERE thread = $1
+                         AND (arr > (SELECT arr FROM post WHERE id = $2))
+                       ORDER BY arr `;
+                arr.push(thread);
+                arr.push(params.since);
+            }
+        } else {
+            str = `SELECT id, author, parent, message, forum, thread, created
+                   FROM post
+                   WHERE thread = $1
+                   ORDER by arr `;
+            arr.push(thread);
+            if (params.desc) {
+                str += 'desc';
+            }
+        }
+
+        if (params.limit !== undefined) {
+            str += ' limit ' + params.limit;
+        }
+        const res = await query(this.pool, str, arr);
+        return responseModel(STATUSES.SUCCESS, res.rows);
+    }
+
+    /**
+     * Parent tree sort
+     * @param {String} thread
+     * @param {Object} params
+     */
+    async parentTreeSort(thread, params) {
+        let str = '';
+        const arr = [];
+        if (params.since !== undefined) {
+            arr.push(thread);
+            arr.push(params.since);
+            if (params.limit !== undefined) {
+                str = `  SELECT id, author, parent, message, forum, thread, created FROM post p
+                         WHERE p.thread = $1 and p.arr[1] IN (
+                             SELECT p2.arr[1] FROM post p2 WHERE p2.thread = $1
+                               AND p2.parent = 0 and p2.arr[1] > (SELECT p3.arr[1]
+                                                from post p3 where p3.id = $2)
+                             ORDER BY p2.arr
+                             LIMIT $3)
+                         ORDER BY p.arr`;
+                if (params.desc) {
+                    str = `SELECT id, author, parent, message, forum, thread, created
+                           FROM post p
+                           WHERE p.thread = $1
+                             and p.arr[1] IN ( SELECT p2.arr[1]
+                               FROM post p2
+                               WHERE p2.thread = $1 AND p2.parent = 0
+                                 and p2.arr[1] < (SELECT p3.arr[1] from post p3 where p3.id = $2)
+                               ORDER BY p2.arr DESC
+                               LIMIT $3
+                           )
+                           ORDER BY p.arr[1] DESC, p.arr[2:]`;
+                }
+                arr.push(params.limit);
+            } else {
+                str = `  SELECT id, author, parent, message, forum, thread, created
+                         FROM post p
+                         WHERE p.thread = $1
+                           and p.arr[1] IN (SELECT p2.arr[1]
+                                            FROM post p2
+                                            WHERE p2.thread = $1
+                                              AND p2.parent = 0
+                                              and p2.arr[1] > (SELECT p3.arr[1]
+                                                               from post p3
+                                                               where p3.id = $2)
+                                            ORDER BY p2.arr)
+                         ORDER BY p.arr`;
+                if (params.desc) {
+                    str = `  SELECT id, author, parent, message, forum, thread, created
+                             from posts p
+                             WHERE p.thread = $1
+                               and p.arr[1] IN (
+                                 SELECT p2.arr[1] FROM posts p2
+                                 WHERE p2.thread = $1 AND p2.parent = 0 and p2.arr[1] < (SELECT p3.arr[1] from posts p3 where p3.id = $2)
+                                 ORDER BY p2.arr DESC
+                                 limit $3
+                             )
+                             ORDER BY p.arr[1] DESC, p.arr[2:]`;
+                    arr.push(params.desc);
+                }
+
+            }
+
+            if (params.desc) {
+                str = str.replace('order by id', 'order by id desc');
+                str = str.replace('order by p.arr, p.id', 'order by p.arr[0] desc, p.arr, p.id');
+                str = str.replace('>', '<');
+            }
+        } else {
+            if (params.desc) {
+                str = `  SELECT id, author, parent, message, forum, thread, created
+                         FROM post
+                         WHERE thread = $1
+                           AND arr[1] IN (
+                             SELECT arr[1] FROM post WHERE thread = $1
+                             GROUP BY arr[1]
+                             ORDER BY arr[1] DESC`;
+                arr.push(thread);
+                if (params.limit !== undefined) {
+                    str += ' LIMIT $2';
+                    arr.push(params.limit);
+                }
+                str += ') ORDER BY arr[1] DESC, arr';
+            } else {
+                str = ` SELECT id, author, parent, message, forum, thread, created
+                        FROM post
+                        WHERE thread = $1 and arr[1] IN (
+                            SELECT arr[1] FROM post WHERE thread = $1
+                            GROUP BY arr[1]
+                            ORDER BY arr[1]`;
+                arr.push(thread);
+                if (params.limit !== undefined) {
+                    str += ' LIMIT $2';
+                    arr.push(params.limit);
+                }
+                str += ') ORDER BY arr';
+            }
+        }
+        const res = await query(this.pool, str, arr);
+        return responseModel(STATUSES.SUCCESS, res.rows);
     }
 
     /**
@@ -128,134 +274,6 @@ export default class RepositoryPost {
             ' order by post.created, post.id');
         if (params.limit !== undefined) {
             str += ' limit ' + params.limit;
-        }
-        const res = await query(this.pool, str, arr);
-        return responseModel(STATUSES.SUCCESS, res.rows);
-    }
-
-    /**
-     * tree sort
-     * @param {String} thread
-     * @param {Object} params
-     */
-    async treeSort(thread, params) {
-        let str = '';
-        const arr = [];
-        if (params.since !== undefined) {
-            if (params.desc) {
-                str = 'with elem AS (SELECT arr from post where id = $1) ' +
-                    'SELECT p.id, p.author, p.created, p.forum, p."isEdited", p.message, p.parent, p.thread, p.arr from post p ' +
-                    'where p.thread = $2 AND p.arr < (select * from elem) order by p.arr desc, p.id';
-                arr.push(params.since);
-                arr.push(thread);
-            } else {
-                str += 'with elem AS (SELECT arr from post where id = $1), ' +
-                    'lol AS (SELECT * from post p ' +
-                    'where p.thread = $2 AND p.arr <= (select * from elem) ' +
-                    'order by p.arr, p.id) ' +
-                    'SELECT p.id, p.author, p.created, p.forum, p."isEdited", p.message, p.parent, ' +
-                    'p.thread, p.arr from post p where p.thread = $3 ' +
-                    'order by p.arr, p.id offset (SELECT count(*) from lol)';
-                arr.push(params.since);
-                arr.push(thread);
-                arr.push(thread);
-            }
-        } else {
-            str += 'SELECT p.id, p.author, p.created, p.forum, p."isEdited", p.message, ' +
-                'p.parent, p.thread, p.arr from post p where p.thread = $1 order by p.arr, p.id';
-            arr.push(thread);
-            if (params.desc) {
-                str = str.replace('by p.arr', 'by p.arr desc');
-            }
-        }
-        if (params.limit !== undefined) {
-            str += ' limit ' + params.limit;
-        }
-        const res = await query(this.pool, str, arr);
-        return responseModel(STATUSES.SUCCESS, res.rows);
-    }
-
-    /**
-     * Parent tree sort
-     * @param {String} thread
-     * @param {Object} params
-     */
-    async parentTreeSort(thread, params) {
-        let str = '';
-        const arr = [];
-        if (params.since !== undefined) {
-            str += 'WITH kek AS (SELECT arr[1] from post where id = $1), ' +
-                '     parents AS (SELECT id from post where parent = 0 AND id > (SELECT * from kek) order by id) ' +
-                'SELECT p.id, p.author, p.created, p.forum, p."isEdited", p.message, p.parent, p.thread, p.arr from post p ' +
-                'inner join parents par on par.id = p.arr[1] ' +
-                'where p.thread = $2 ' +
-                'order by p.arr, p.id';
-            arr.push(params.since);
-            arr.push(thread);
-            // }
-            if (params.limit !== undefined) {
-                str = str.replace('order by id', 'order by id limit ' + params.limit);
-            }
-            if (params.desc) {
-                str = str.replace('order by id', 'order by id desc');
-                str = str.replace('order by p.arr, p.id', 'order by p.arr[0] desc, p.arr, p.id');
-                str = str.replace('>', '<');
-            }
-        } else {
-            if (params.desc) {
-                str = 'WITH parents AS (SELECT id from post where parent = 0 and thread = $1 order by id desc) ' +
-                    'SELECT p.id, p.author, p.created, p.forum, p."isEdited", p.message, p.parent, p.thread, p.arr from post p ' +
-                    'inner join (SELECT id from parents) par ON p.arr[1] = par.id ' +
-                    'where p.thread = $2 ' +
-                    'order by p.arr[1] desc, p.arr, p.id';
-                arr.push(thread);
-                arr.push(thread);
-                if (params.limit !== undefined) {
-                    str = str.replace('order by id desc', 'order by id desc limit ' + params.limit);
-                }
-            } else {
-                str += 'WITH parents AS (SELECT id from post where parent = 0 and thread = $1 order by id)' +
-                    ' SELECT p.id, p.author, p.created, p.forum, p."isEdited", p.message, p.parent, p.thread, p.arr from post p' +
-                    ' where p.thread = $2 AND p.arr[1] IN (SELECT * from parents) order by p.arr, p.id';
-                arr.push(thread);
-                arr.push(thread);
-                if (params.limit !== undefined) {
-                    str = str.replace('order by id', 'order by id limit ' + params.limit);
-                }
-            }
-        }
-        const res = await query(this.pool, str, arr);
-        return responseModel(STATUSES.SUCCESS, res.rows);
-    }
-
-    /**
-     * default sort by id
-     * @param {String} thread
-     * @param {Object} params
-     */
-    async defaultSort(thread, params) {
-        let str = 'SELECT p.id, p.author, p.created, p.forum,p."isEdited",p.message,p.parent,' +
-            'p.thread from post p inner join thread t on p.thread = t.id where t.slug = $1';
-        const arr = [
-            thread,
-        ];
-        let pos = 2;
-        if (params.since !== undefined) {
-            str += ' and p.id > $' + pos;
-            arr.push(params.since);
-            pos++;
-        }
-        str += ' order by p.id';
-        if (params.desc) {
-            str += ' desc';
-            if (params.since !== undefined) {
-                str = str.replace('>', '<');
-            }
-        }
-        if (params.limit !== undefined) {
-            str += ' limit $' + pos;
-            pos++;
-            arr.push(params.limit);
         }
         const res = await query(this.pool, str, arr);
         return responseModel(STATUSES.SUCCESS, res.rows);

@@ -1,14 +1,14 @@
 create extension if not exists citext;
 
-CREATE UNLOGGED TABLE users
+create UNLOGGED TABLE users
 (
-    nickname citext COLLATE ucs_basic PRIMARY KEY,
-    fullname varchar NOT NULL,
-    email    citext  NOT NULL UNIQUE,
+    nickname citext PRIMARY KEY,
+    fullname citext NOT NULL,
+    email    citext UNIQUE,
     about    varchar
 );
 
-CREATE UNLOGGED TABLE forum
+create UNLOGGED TABLE forum
 (
     slug    citext PRIMARY KEY,
     "user"  citext  NOT NULL,
@@ -18,7 +18,9 @@ CREATE UNLOGGED TABLE forum
     FOREIGN KEY ("user") REFERENCES users (nickname)
 );
 
-CREATE UNLOGGED TABLE thread
+create UNIQUE INDEX IF NOT EXISTS index_forum_slug ON forum (slug);
+
+create UNLOGGED TABLE thread
 (
     "id"    SERIAL PRIMARY KEY,
     forum   citext  NOT NULL,
@@ -30,10 +32,11 @@ CREATE UNLOGGED TABLE thread
     votes   int4        DEFAULT 0,
     FOREIGN KEY (author) REFERENCES users (nickname),
     FOREIGN KEY (forum) REFERENCES forum (slug)
-
 );
+create INDEX IF NOT EXISTS index_thread_forum ON thread (forum);
+create INDEX IF NOT EXISTS index_thread_slug ON thread (slug);
 
-CREATE UNLOGGED TABLE post
+create UNLOGGED TABLE post
 (
     id         SERIAL PRIMARY KEY,
     author     citext  NOT NULL,
@@ -48,8 +51,16 @@ CREATE UNLOGGED TABLE post
     FOREIGN KEY (author) REFERENCES users (nickname),
     FOREIGN KEY (thread) REFERENCES thread (id)
 );
+create INDEX IF NOT EXISTS index_post_thread_id_created ON post (id, created, thread);
+create INDEX IF NOT EXISTS index_post_thread_arr_1_id ON post (thread, (arr[1]), id);
 
-CREATE UNLOGGED TABLE votes
+create INDEX IF NOT EXISTS index_post_thread_arr ON post (thread, arr);
+create INDEX IF NOT EXISTS index_post_forum ON post (forum);
+
+create INDEX IF NOT EXISTS index_post_thread_id_0 ON post (thread, id) WHERE parent = 0;
+create INDEX IF NOT EXISTS index_post_thread_id ON post (thread, id);
+
+create UNLOGGED TABLE votes
 (
     author citext NOT NULL,
     thread int4   NOT NULL,
@@ -58,96 +69,106 @@ CREATE UNLOGGED TABLE votes
     FOREIGN KEY (thread) REFERENCES thread (id)
 );
 
-CREATE OR REPLACE FUNCTION post_array() RETURNS trigger AS
+create UNIQUE INDEX IF NOT EXISTS index_votes_thread_author ON votes (thread, author);
+
+create UNLOGGED TABLE forum_user
+(
+    nickname citext COLLATE ucs_basic not null,
+    fullname text                     NOT NULL,
+    email    text                     NOT NULL,
+    about    text,
+    forum    citext                   NOT NULL
+);
+
+create UNIQUE INDEX IF NOT EXISTS index_forum_user ON forum_user (forum, nickname);
+
+create or replace function post_array() RETURNS trigger AS
 $post_array$
-DECLARE
-    arr int4[];
-BEGIN
-    IF NEW.parent = 0 THEN
+begin
+    if NEW.parent = 0 then
         NEW.arr = ARRAY [currval('post_id_seq')];
-    END IF;
+    end IF;
     IF NEW.parent <> 0 THEN
-        arr := (SELECT post.arr from post where post.id = NEW.parent);
-        NEW.arr = arr || CAST(currval('post_id_seq') as int4);
+        NEW.arr = NEW.arr || CAST(currval('post_id_seq') as int4);
     END IF;
     UPDATE forum SET posts = posts + 1 WHERE slug = NEW.forum;
+
+    INSERT INTO forum_user (nickname, forum, email, fullname, about)
+    SELECT nickname, NEW.forum, email, fullname, about
+    FROM users
+    WHERE nickname = NEW.author
+    ON CONFLICT DO NOTHING;
+
     RETURN NEW;
 END;
 $post_array$ LANGUAGE plpgsql;
 
-CREATE TRIGGER post_trigger
-    before INSERT
-    ON post
-    FOR EACH ROW
-EXECUTE PROCEDURE post_array();
+create trigger post_trigger
+    before insert
+    on post
+    for each row
+EXECUTE procedure post_array();
 
 
-CREATE OR REPLACE FUNCTION update_forum() RETURNS trigger AS
+create or replace function update_forum() RETURNS trigger AS
 $tread_trigger$
-BEGIN
-    UPDATE forum SET threads = threads + 1 where slug = NEW.forum;
-    RETURN NEW;
-END;
+begin
+    update forum set threads = threads + 1 where slug = NEW.forum;
+
+    insert into forum_user (nickname, forum, email, fullname, about)
+    select nickname, NEW.forum, email, fullname, about
+    from users
+    where nickname = NEW.author
+    ON CONFLICT DO NOTHING;
+
+    return NEW;
+end;
 $tread_trigger$ LANGUAGE plpgsql;
 
 
-CREATE TRIGGER thread_trigger
-    after INSERT
-    ON thread
-    FOR EACH ROW
-EXECUTE PROCEDURE update_forum();
+create trigger thread_trigger
+    after insert
+    on thread
+    for each row
+EXECUTE procedure update_forum();
 
 
-CREATE OR REPLACE FUNCTION insert_vote() RETURNS trigger AS
+create or replace function insert_vote() RETURNS trigger AS
 $tread_trigger$
-BEGIN
+begin
     if new.vote = true then
-        UPDATE thread SET votes = votes + 1 where id = NEW.thread;
+        update thread set votes = votes + 1 where id = NEW.thread;
     end if;
     if new.vote = false then
-        UPDATE thread SET votes = votes - 1 where id = NEW.thread;
+        update thread set votes = votes - 1 where id = NEW.thread;
     end if;
 
-    RETURN NEW;
-END;
+    return NEW;
+end;
 $tread_trigger$ LANGUAGE plpgsql;
 
-CREATE TRIGGER votes_trigger
-    before INSERT
-    ON votes
-    FOR EACH ROW
-EXECUTE PROCEDURE insert_vote();
+create trigger votes_trigger
+    before insert
+    on votes
+    for each row
+EXECUTE procedure insert_vote();
 
-CREATE OR REPLACE FUNCTION change_vote() RETURNS trigger AS
+create or replace function change_vote() RETURNS trigger AS
 $tread_trigger$
-BEGIN
+begin
     if new.vote = true then
-        UPDATE thread SET votes = votes + 2 where id = NEW.thread;
+        update thread set votes = votes + 2 where id = NEW.thread;
     end if;
     if new.vote = false then
-        UPDATE thread SET votes = votes - 2 where id = NEW.thread;
+        update thread set votes = votes - 2 where id = NEW.thread;
     end if;
 
-    RETURN NEW;
-END;
+    return NEW;
+end;
 $tread_trigger$ LANGUAGE plpgsql;
 
-CREATE TRIGGER votes_change_trigger
-    before UPDATE
-    ON votes
-    FOR EACH ROW
-EXECUTE PROCEDURE change_vote();
-
-CREATE UNIQUE INDEX IF NOT EXISTS idx_forum_slug  ON forum (slug);
-
-CREATE INDEX IF NOT EXISTS idx_threads_slug ON thread (slug);
-CREATE INDEX IF NOT EXISTS idx_threads_forum ON thread (forum);
-
-CREATE INDEX IF NOT EXISTS idx_posts_forum ON post (forum);
-CREATE INDEX IF NOT EXISTS idx_posts_thread_path ON post (thread, arr);
-CREATE INDEX IF NOT EXISTS idx_posts_thread_id ON post (thread, id);
-CREATE INDEX IF NOT EXISTS idx_posts_thread_id0 ON post (thread, id) WHERE parent = 0;
-CREATE INDEX IF NOT EXISTS idx_posts_thread_id_created ON post (id, created, thread);
-CREATE INDEX IF NOT EXISTS idx_posts_thread_path1_id ON post (thread, (arr[1]), id);
-
-CREATE UNIQUE INDEX IF NOT EXISTS idx_votes_thread_nickname ON votes (thread, author);
+create trigger votes_change_trigger
+    before update
+    on votes
+    for each row
+EXECUTE procedure change_vote();

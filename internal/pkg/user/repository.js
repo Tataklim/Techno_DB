@@ -89,7 +89,7 @@ export default class UserRepository {
      * @return {Object}
      */
     async _getUserByName(user) {
-        const str = 'SELECT * FROM users WHERE lower(nickname) = $1';
+        const str = 'SELECT * FROM users WHERE nickname = $1';
         const res = await query(this.pool, str, [
             user.nickname.toLowerCase(),
         ]);

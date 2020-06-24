@@ -29,22 +29,41 @@ export default class PostUseCase {
     async createPost(thread, postList) {
         const arr = [];
         const curDay = new Date();
-        for (const elem of postList) {
-            const postData = await this.getPostThread(thread, elem);
-            if (postData.type !== undefined) {
-                return postData;
+        if (postList.length !== 0) {
+            const mod = (postModel(
+                postList[0].author,
+                postList[0].message,
+                thread,
+                postList[0].forum,
+                postList[0].parent,
+            ));
+            const threadData = await this.threadRepository.getThread({
+                slug: mod.threadSlug,
+                id: mod.threadID,
+            });
+            if (threadData.type === STATUSES.NOT_FOUND) {
+                return threadData;
             }
-            const author = await this.userRepository.getUser({nickname: postData.author});
-            if (author.type !== STATUSES.SUCCESS) {
-                return author;
+            for (const elem of postList) {
+                const postData = await this.getPostThread(thread, elem, threadData);
+                if (postData.type !== undefined) {
+                    return postData;
+                }
+                const author = await this.userRepository.getUser({nickname: postData.author});
+                if (author.type !== STATUSES.SUCCESS) {
+                    return author;
+                }
+                postData.isEdited = false;
+                postData.arr = await this.checkParent(postData.parent, postData.thread);
+                if (postData.arr === '{}') {
+                    postData.parent = 0
+                }
+                if (postData.arr.type !== undefined) {
+                    return responseModel(STATUSES.WRONG_PARENT, 'no parent');
+                }
+                postData.created = curDay;
+                arr.push(postData);
             }
-            postData.isEdited = false;
-            postData.parent = await this.checkParent(postData.parent, postData.thread);
-            if (postData.parent.type !== undefined) {
-                return responseModel(STATUSES.WRONG_PARENT, 'no parent');
-            }
-            postData.created = curDay;
-            arr.push(postData);
         }
 
         if (arr.length === 0) {
@@ -77,7 +96,7 @@ export default class PostUseCase {
      */
     async checkParent(parentID, threadID) {
         if (parentID === undefined) {
-            return 0;
+            return '{}';
         }
         return await this.repository.checkParentPost(parentID, threadID);
     }
@@ -86,8 +105,9 @@ export default class PostUseCase {
      * Проверка всех данных одного поста
      * @param {String} thread
      * @param {Object} elem
+     * @param threadData
      */
-    async getPostThread(thread, elem) {
+    async getPostThread(thread, elem, threadData) {
         const single = (postModel(
             elem.author,
             elem.message,
@@ -95,13 +115,7 @@ export default class PostUseCase {
             elem.forum,
             elem.parent,
         ));
-        const threadData = await this.threadRepository.getThread({
-            slug: single.threadSlug,
-            id: single.threadID,
-        });
-        if (threadData.type === STATUSES.NOT_FOUND) {
-            return threadData;
-        }
+
         if (single.error !== undefined) {
             return responseModel(STATUSES.SUCCESS, []);
         }
@@ -174,16 +188,15 @@ export default class PostUseCase {
             return threadExists;
         }
         switch (params.sort) {
-        case 'flat':
-            return await this.repository.flatSort(threadExists.body.id, params);
-        case 'tree':
-            return await this.repository.treeSort(threadExists.body.id, params);
-        case 'parent_tree':
-            return await this.repository.parentTreeSort(threadExists.body.id, params);
-        default:
-            return await this.repository.defaultSort(threadExists.body.slug, params);
+            case 'tree':
+                return await this.repository.treeSort(threadExists.body.id, params);
+            case 'parent_tree':
+                return await this.repository.parentTreeSort(threadExists.body.id, params);
+            default:
+                return await this.repository.flatSort(threadExists.body.id, params);
         }
     }
+
     /**
      * @param {String} value
      * @return {boolean}
@@ -193,4 +206,3 @@ export default class PostUseCase {
         return er.test(value);
     }
 }
-

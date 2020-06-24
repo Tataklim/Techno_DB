@@ -48,20 +48,14 @@ export default class ForumRepository {
             return checkForum;
         }
 
-        let str = 'with forum_users as (SELECT u.nickname, u.fullname, u.email, u.about from users u ' +
-            '    left join post p on u.nickname = p.author ' +
-            '    left join thread t on u.nickname = t.author ' +
-            '    where t.forum = $1 or p.forum = $2 group by u.nickname, u.fullname, u.email, u.about ' +
-            'order by u.nickname) ' +
-            'SELECT nickname, fullname, about, email FROM forum_users ';
-            // 'WHERE LOWER(nickname) > LOWER(\'mel.FoDE6e52KW33ju\') ' +
-            // 'ORDER BY nickname';
+        let str = 'SELECT nickname, fullname, email, about from forum_user WHERE forum = $1'
+
         const arr = [
-            slug,
             slug,
         ];
         if (params.since !== undefined) {
-            str += 'WHERE LOWER(nickname) > LOWER($' + (arr.length+1)+ ') ';
+            str += ' AND lower(nickname) > lower($2::TEXT) ';
+
             arr.push(params.since);
             if (params.desc) {
                 str = str.replace('>', '<');
