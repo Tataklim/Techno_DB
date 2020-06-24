@@ -12,53 +12,53 @@ const port = 5000;
 const app = express();
 app.use(bodyParser.json());
 
-// const pool = new native.Pool({
-//     user: 'docker',
-//     host: 'localhost',
-//     database: 'docker',
-//     password: 'docker',
-//     port: 5432,
-// });
-
 const pool = new native.Pool({
-    user: 'postgres',
+    user: 'docker',
     host: 'localhost',
-    database: 'db_nat',
-    password: 'postgres',
+    database: 'docker',
+    password: 'docker',
     port: 5432,
 });
 
-// const pool2 = new pkg.Pool({
-//     user: 'docker',
+// const pool = new native.Pool({
+//     user: 'postgres',
 //     host: 'localhost',
-//     database: 'docker',
-//     password: 'docker',
+//     database: 'db_nat',
+//     password: 'postgres',
 //     port: 5432,
 // });
+
 const pool2 = new pkg.Pool({
-    user: 'postgres',
+    user: 'docker',
     host: 'localhost',
-    database: 'db_nat',
-    password: 'postgres',
+    database: 'docker',
+    password: 'docker',
     port: 5432,
 });
-
-// const sql = postgres('postgres://username:password@host:port/database', {
+// const pool2 = new pkg.Pool({
+//     user: 'postgres',
 //     host: 'localhost',
-//     port: 5432,       // Postgres server port
-//     database: 'docker',         // Name of database to connect to
-//     username: 'docker',         // Username of database user
-//     password: 'docker',         // Password of database user
-//     max: 20,         // Max number of connections
-// })
+//     database: 'db_nat',
+//     password: 'postgres',
+//     port: 5432,
+// });
+
 const sql = postgres('postgres://username:password@host:port/database', {
     host: 'localhost',
     port: 5432,       // Postgres server port
-    database: 'db_nat',         // Name of database to connect to
-    username: 'postgres',         // Username of database user
-    password: 'postgres',         // Password of database user
+    database: 'docker',         // Name of database to connect to
+    username: 'docker',         // Username of database user
+    password: 'docker',         // Password of database user
     max: 20,         // Max number of connections
 })
+// const sql = postgres('postgres://username:password@host:port/database', {
+//     host: 'localhost',
+//     port: 5432,       // Postgres server port
+//     database: 'db_nat',         // Name of database to connect to
+//     username: 'postgres',         // Username of database user
+//     password: 'postgres',         // Password of database user
+//     max: 20,         // Max number of connections
+// })
 
 router(app, pool, pool2, sql);
 
