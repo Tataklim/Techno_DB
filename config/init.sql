@@ -57,7 +57,7 @@ create INDEX IF NOT EXISTS index_post_thread_arr_1_id ON post (thread, (arr[1]),
 create INDEX IF NOT EXISTS index_post_thread_arr ON post (thread, arr);
 create INDEX IF NOT EXISTS index_post_forum ON post (forum);
 
---create INDEX IF NOT EXISTS index_post_thread_id_0 ON post (thread, id) WHERE parent = 0;
+create INDEX IF NOT EXISTS index_post_thread_id_0 ON post (thread, id) WHERE parent = 0;
 create INDEX IF NOT EXISTS index_post_thread_id ON post (thread, id);
 
 create UNLOGGED TABLE votes
