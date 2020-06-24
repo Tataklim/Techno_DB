@@ -10,10 +10,12 @@ export default class ForumRepository {
     /**
      * Constructor
      * @param {Object} pool
+     * @param {Object} sql
      */
-    constructor(pool) {
+    constructor(pool, sql) {
         this.pool = pool;
-        this.userRepository = new UserRepository(pool);
+        this.sql = sql;
+        this.userRepository = new UserRepository(pool, sql);
     }
 
 

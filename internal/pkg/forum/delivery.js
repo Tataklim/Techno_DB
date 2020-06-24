@@ -9,9 +9,10 @@ export default class ForumDelivery {
     /**
      * Constructor
      * @param {Object} pool
+     * @param {Object} sql
      */
-    constructor(pool) {
-        this.repository = new ForumRepository(pool);
+    constructor(pool, sql) {
+        this.repository = new ForumRepository(pool, sql);
     }
     /**
      * User getting

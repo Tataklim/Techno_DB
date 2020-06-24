@@ -11,11 +11,13 @@ export default class ThreadRepository {
     /**
      * Constructor
      * @param {Object} pool
+     * @param {Object} sql
      */
-    constructor(pool) {
+    constructor(pool, sql) {
         this.pool = pool;
-        this.userRepository = new UserRepository(pool);
-        this.forumRepository = new ForumRepository(pool);
+        this.sql = sql;
+        this.userRepository = new UserRepository(pool, sql);
+        this.forumRepository = new ForumRepository(pool, sql);
     }
 
     /**
@@ -302,6 +304,34 @@ export default class ThreadRepository {
         }
         await this._createSecondVote(nickname, id, voteSign);
         return responseModel(STATUSES.SUCCESS, checkThread.body);
+    }
+
+    /**
+     * Vote create
+     * @param {String} nickname
+     * @param {number} id
+     * @param {number} voteSign
+     */
+    async _makeVote(nickname, id, voteSign) {
+        const str = 'UPDATE votes SET vote = $1 WHERE thread = $2 AND author = $3;';
+        let req = await query(this.pool, str, [
+            voteSign,
+            id,
+            nickname,
+        ]);
+        if (req.rowCount === 0) {
+            const str2 = 'INSERT INTO votes (author, thread, vote) VALUES ($1, $2, $3);';
+            await query(this.pool, str2, [
+                nickname,
+                id,
+                voteSign,
+            ]);
+        }
+        const str3 = 'SELECT votes FROM thread WHERE id = $1';
+        let result = await query(this.pool, str3, [
+            id,
+        ]);
+        return responseModel(STATUSES.SUCCESS, result.rows[0]);
     }
 
     /**

@@ -13,12 +13,13 @@ export default class PostUseCase {
     /**
      * Constructor
      * @param {Object} pool
+     * @param {Object} sql
      */
-    constructor(pool) {
-        this.repository = new RepositoryPost(pool);
-        this.threadRepository = new ThreadRepository(pool);
-        this.userRepository = new UserRepository(pool);
-        this.forumRepository = new ForumRepository(pool);
+    constructor(pool, sql) {
+        this.repository = new RepositoryPost(pool, sql);
+        this.threadRepository = new ThreadRepository(pool, sql);
+        this.userRepository = new UserRepository(pool, sql);
+        this.forumRepository = new ForumRepository(pool, sql);
     }
 
     /**
@@ -55,7 +56,7 @@ export default class PostUseCase {
                 }
                 postData.isEdited = false;
                 postData.arr = await this.checkParent(postData.parent, postData.thread);
-                if (postData.arr === '{}') {
+                if (postData.arr[0] === -1) {
                     postData.parent = 0
                 }
                 if (postData.arr.type !== undefined) {
@@ -96,7 +97,7 @@ export default class PostUseCase {
      */
     async checkParent(parentID, threadID) {
         if (parentID === undefined) {
-            return '{}';
+            return [-1];
         }
         return await this.repository.checkParentPost(parentID, threadID);
     }

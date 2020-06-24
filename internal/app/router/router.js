@@ -5,11 +5,11 @@ import {API} from '../../../config/constants.js';
 import PostDelivery from '../../pkg/post/delivery.js';
 import ServiceDelivery from '../../pkg/service/delivery.js';
 
-export const router = (app, pool, pool2) => {
-    const userDelivery = new UserDelivery(pool);
-    const forumDelivery = new ForumDelivery(pool);
-    const threadDelivery = new ThreadDelivery(pool);
-    const postDelivery = new PostDelivery(pool);
+export const router = (app, pool, pool2, sql) => {
+    const userDelivery = new UserDelivery(pool, sql);
+    const forumDelivery = new ForumDelivery(pool, sql);
+    const threadDelivery = new ThreadDelivery(pool, sql);
+    const postDelivery = new PostDelivery(pool, sql);
     const serviceDelivery = new ServiceDelivery(pool2);
 
     app.get(API + '/service/status', (request, response) => {

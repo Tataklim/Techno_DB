@@ -10,9 +10,10 @@ export default class PostDelivery {
     /**
      * Constructor
      * @param {Object} pool
+     * @param {Object} sql
      */
-    constructor(pool) {
-        this.useCase = new PostUseCase(pool);
+    constructor(pool, sql) {
+        this.useCase = new PostUseCase(pool, sql);
     }
 
     /**

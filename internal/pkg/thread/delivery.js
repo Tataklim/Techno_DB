@@ -9,9 +9,10 @@ export default class ThreadDelivery {
     /**
      * Constructor
      * @param {Object} pool
+     * @param {Object} sql
      */
-    constructor(pool) {
-        this.repository = new ThreadRepository(pool);
+    constructor(pool, sql) {
+        this.repository = new ThreadRepository(pool, sql);
     }
 
     /**

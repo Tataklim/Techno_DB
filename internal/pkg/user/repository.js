@@ -9,9 +9,11 @@ export default class UserRepository {
     /**
      * Constructor
      * @param {Object} pool
+     * @param {Object} sql
      */
-    constructor(pool) {
+    constructor(pool, sql) {
         this.pool = pool;
+        this.sql = sql;
     }
 
     /**

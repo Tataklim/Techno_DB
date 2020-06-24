@@ -9,10 +9,11 @@ export default class UserDelivery {
     /**
      * Constructor
      * @param {Object} pool
+     * @param {Object} sql
      */
-    constructor(pool) {
+    constructor(pool, sql) {
         // this.pool = pool;
-        this.repository = new UserRepository(pool);
+        this.repository = new UserRepository(pool, sql);
     }
 
     /**

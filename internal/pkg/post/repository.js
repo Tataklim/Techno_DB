@@ -9,9 +9,11 @@ export default class RepositoryPost {
     /**
      * Constructor
      * @param {Object} pool
+     * @param {Object} sql
      */
-    constructor(pool) {
+    constructor(pool, sql) {
         this.pool = pool;
+        this.sql = sql;
     }
 
     /**
@@ -19,8 +21,8 @@ export default class RepositoryPost {
      * @param {Object} postList
      */
     async createPost(postList) {
-        const str = 'INSERT INTO post(author, created, forum, "isEdited", message, thread, parent, arr) ' +
-            'VALUES ($1,$2, $3, $4, $5, $6, $7, $8) RETURNING id';
+        // const str = 'INSERT INTO post(author, created, forum, "isEdited", message, thread, parent, arr) ' +
+        //     'VALUES ($1,$2, $3, $4, $5, $6, $7, $8) RETURNING id';
         for (const elem of postList) {
             const arr = [
                 elem.author,
@@ -32,8 +34,16 @@ export default class RepositoryPost {
                 elem.parent,
                 elem.arr,
             ];
-            const id = await query(this.pool, str, arr);
-            elem.id = id.rows[0].id;
+            // if (arr[7] !== '{}' ) {
+            const kek = await this.sql`INSERT INTO post(author, created, forum, "isEdited", message, thread, parent, arr) 
+VALUES (${arr[0]},${arr[1]}, ${arr[2]}, ${arr[3]}, ${arr[4]}, ${arr[5]}, ${arr[6]}, ARRAY[${arr[7]}]) RETURNING id`
+            // } else {
+            //     kek = await this.sql`INSERT INTO post(author, created, forum, "isEdited", message, thread, parent, arr)
+// VALUES (${arr[0]},${arr[1]}, ${arr[2]}, ${arr[3]}, ${arr[4]}, ${arr[5]}, ${arr[6]}, ${arr[7]}) RETURNING id`
+//             }
+            // const id = await query(this.pool, str, arr);
+            // elem.id = id.rows[0].id;
+            elem.id = kek[0].id;
         }
         return responseModel(STATUSES.SUCCESS, postList);
     }
@@ -81,7 +91,8 @@ export default class RepositoryPost {
         const res = await query(this.pool, str, [
             parentID,
         ]);
-
+        // const res = await this.sql`SELECT arr, thread FROM post WHERE id = ${parentID}`
+        // console.log(res)
         if (res.rowCount === 0 || res.rows[0].thread !== threadID) {
             return responseModel(STATUSES.NOT_FOUND, 'There is not parent post with this ID');
         }
@@ -158,11 +169,17 @@ export default class RepositoryPost {
             arr.push(thread);
             arr.push(params.since);
             if (params.limit !== undefined) {
-                str = `  SELECT id, author, parent, message, forum, thread, created FROM post p
-                         WHERE p.thread = $1 and p.arr[1] IN (
-                             SELECT p2.arr[1] FROM post p2 WHERE p2.thread = $1
-                               AND p2.parent = 0 and p2.arr[1] > (SELECT p3.arr[1]
-                                                from post p3 where p3.id = $2)
+                str = `  SELECT id, author, parent, message, forum, thread, created
+                         FROM post p
+                         WHERE p.thread = $1
+                           and p.arr[1] IN (
+                             SELECT p2.arr[1]
+                             FROM post p2
+                             WHERE p2.thread = $1
+                               AND p2.parent = 0
+                               and p2.arr[1] > (SELECT p3.arr[1]
+                                                from post p3
+                                                where p3.id = $2)
                              ORDER BY p2.arr
                              LIMIT $3)
                          ORDER BY p.arr`;
@@ -170,12 +187,13 @@ export default class RepositoryPost {
                     str = `SELECT id, author, parent, message, forum, thread, created
                            FROM post p
                            WHERE p.thread = $1
-                             and p.arr[1] IN ( SELECT p2.arr[1]
-                               FROM post p2
-                               WHERE p2.thread = $1 AND p2.parent = 0
-                                 and p2.arr[1] < (SELECT p3.arr[1] from post p3 where p3.id = $2)
-                               ORDER BY p2.arr DESC
-                               LIMIT $3
+                             and p.arr[1] IN (SELECT p2.arr[1]
+                                              FROM post p2
+                                              WHERE p2.thread = $1
+                                                AND p2.parent = 0
+                                                and p2.arr[1] < (SELECT p3.arr[1] from post p3 where p3.id = $2)
+                                              ORDER BY p2.arr DESC
+                                              LIMIT $3
                            )
                            ORDER BY p.arr[1] DESC, p.arr[2:]`;
                 }
@@ -198,8 +216,11 @@ export default class RepositoryPost {
                              from posts p
                              WHERE p.thread = $1
                                and p.arr[1] IN (
-                                 SELECT p2.arr[1] FROM posts p2
-                                 WHERE p2.thread = $1 AND p2.parent = 0 and p2.arr[1] < (SELECT p3.arr[1] from posts p3 where p3.id = $2)
+                                 SELECT p2.arr[1]
+                                 FROM posts p2
+                                 WHERE p2.thread = $1
+                                   AND p2.parent = 0
+                                   and p2.arr[1] < (SELECT p3.arr[1] from posts p3 where p3.id = $2)
                                  ORDER BY p2.arr DESC
                                  limit $3
                              )
@@ -220,7 +241,9 @@ export default class RepositoryPost {
                          FROM post
                          WHERE thread = $1
                            AND arr[1] IN (
-                             SELECT arr[1] FROM post WHERE thread = $1
+                             SELECT arr[1]
+                             FROM post
+                             WHERE thread = $1
                              GROUP BY arr[1]
                              ORDER BY arr[1] DESC`;
                 arr.push(thread);
@@ -232,8 +255,11 @@ export default class RepositoryPost {
             } else {
                 str = ` SELECT id, author, parent, message, forum, thread, created
                         FROM post
-                        WHERE thread = $1 and arr[1] IN (
-                            SELECT arr[1] FROM post WHERE thread = $1
+                        WHERE thread = $1
+                          and arr[1] IN (
+                            SELECT arr[1]
+                            FROM post
+                            WHERE thread = $1
                             GROUP BY arr[1]
                             ORDER BY arr[1]`;
                 arr.push(thread);
