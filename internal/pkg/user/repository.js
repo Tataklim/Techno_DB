@@ -91,11 +91,14 @@ export default class UserRepository {
      * @return {Object}
      */
     async _getUserByName(user) {
-        const str = 'SELECT * FROM users WHERE nickname = $1';
-        const res = await query(this.pool, str, [
-            user.nickname.toLowerCase(),
-        ]);
-        return res.rowCount === 0 ? false : res.rows[0];
+        // const str = 'SELECT * FROM users WHERE nickname = $1';
+        // const res = await query(this.pool, str, [
+        //     user.nickname.toLowerCase(),
+        // ]);
+        // return res.rowCount === 0 ? false : res.rows[0];
+
+        const res = await this.sql`SELECT * FROM users WHERE nickname = ${user.nickname.toLowerCase()}`
+        return res.count === 0 ?  false: res[0]
     }
 
     /**
@@ -104,11 +107,14 @@ export default class UserRepository {
      * @return {Object}
      */
     async _getUserByEmail(user) {
-        const str = 'SELECT * FROM users WHERE lower(email) = $1';
-        const res = await query(this.pool, str, [
-            user.email.toLowerCase(),
-        ]);
-        return res.rowCount === 0 ? false : res.rows[0];
+        // const str = 'SELECT * FROM users WHERE lower(email) = $1';
+        // const res = await query(this.pool, str, [
+        //     user.email.toLowerCase(),
+        // ]);
+        // return res.rowCount === 0 ? false : res.rows[0];
+
+        const res = await this.sql`SELECT * FROM users WHERE email = ${user.email.toLowerCase()}`
+        return res.count === 0 ?  false: res[0]
     }
 
     /**

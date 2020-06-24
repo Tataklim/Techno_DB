@@ -64,7 +64,7 @@ export default class ThreadRepository {
         } else {
             checkThread = await this.getThread({slug: thread});
         }
-        if ( checkThread.type === STATUSES.NOT_FOUND) {
+        if (checkThread.type === STATUSES.NOT_FOUND) {
             return checkThread;
         }
         thread = checkThread.body.id;
@@ -164,26 +164,28 @@ export default class ThreadRepository {
             str += ' title = $1';
             arr.push(title);
         }
-        str += ' where id = $' + (arr.length+1);
+        str += ' where id = $' + (arr.length + 1);
         arr.push(thread);
         str += ' returning id, forum, author, title, message, slug, created, votes';
         const res = await query(this.pool, str, arr);
         return responseModel(STATUSES.SUCCESS, res.rows[0]);
     }
+
     /**
      * Check if exists by slug
      * @param {Object} thread
      * @return {Object}
      */
     async _getThreadBySlug(thread) {
-        if (thread.slug === undefined) {
-            return false;
-        }
-        const str = 'SELECT id, forum, author, title, message, slug, created, votes FROM thread WHERE slug = $1';
-        const res = await query(this.pool, str, [
-            thread.slug.toLowerCase(),
-        ]);
-        return res.rowCount === 0 ? false : res.rows[0];
+
+        // const str = 'SELECT id, forum, author, title, message, slug, created, votes FROM thread WHERE slug = $1';
+        //
+        // const res = await query(this.pool, str, [
+        //     thread.slug.toLowerCase(),
+        // ]);
+        const res = await this.sql`SELECT id, forum, author, title, message, slug, created, votes FROM thread WHERE slug = ${thread.slug.toLowerCase()}`
+        // return res.rowCount === 0 ? false : res.rows[0];
+        return res.count === 0 ?  false: res[0]
     }
 
     /**
@@ -192,11 +194,14 @@ export default class ThreadRepository {
      * @return {Object}
      */
     async _getThreadIDForumBySlug(thread) {
-        const str = 'SELECT id, forum FROM thread WHERE slug = $1';
-        const res = await query(this.pool, str, [
-            thread.slug.toLowerCase(),
-        ]);
-        return res.rowCount === 0 ? false : res.rows[0];
+        // const str = 'SELECT id, forum FROM thread WHERE slug = $1';
+        // const res = await query(this.pool, str, [
+        //     thread.slug.toLowerCase(),
+        // ]);
+        // return res.rowCount === 0 ? false : res.rows[0];
+
+        const res = await this.sql`SELECT id, forum FROM thread WHERE slug = ${thread.slug.toLowerCase()}`
+        return res.count === 0 ?  false: res[0]
     }
 
     /**
@@ -221,11 +226,14 @@ export default class ThreadRepository {
      * @return {Object}
      */
     async _getThreadIDForumByID(thread) {
-        const str = 'SELECT id, forum FROM thread WHERE id = $1';
-        const res = await query(this.pool, str, [
-            thread.id,
-        ]);
-        return res.rowCount === 0 ? false : res.rows[0];
+        // const str = 'SELECT id, forum FROM thread WHERE id = $1';
+        // const res = await query(this.pool, str, [
+        //     thread.id,
+        // ]);
+        // return res.rowCount === 0 ? false : res.rows[0];
+
+        const res = await this.sql`SELECT id, forum FROM thread WHERE id = ${thread.id}`
+        return res.count === 0 ?  false: res[0]
     }
 
 
