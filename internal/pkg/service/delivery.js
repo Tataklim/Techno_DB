@@ -7,10 +7,10 @@ import {STATUSES} from '../../../config/constants.js';
 export default class ServiceDelivery {
     /**
      * Constructor
-     * @param {Object} pool
+     * @param {Object} sql
      */
-    constructor(pool) {
-        this.repository = new ServiceRepository(pool);
+    constructor(sql) {
+        this.repository = new ServiceRepository(sql);
     }
 
     /**

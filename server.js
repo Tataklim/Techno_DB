@@ -1,5 +1,6 @@
 import express from 'express';
-import bodyParser from 'body-parser';
+import fastify from 'fastify'
+
 import pkg from 'pg';
 
 const {native} = pkg;
@@ -9,8 +10,9 @@ import {router} from './internal/app/router/router.js';
 const hostname = '0.0.0.0';
 const port = 5000;
 
-const app = express();
-app.use(bodyParser.json());
+// const app = express();
+const app = fastify()
+// app.use(bodyParser.json());
 
 const pool = new native.Pool({
     user: 'docker',
@@ -62,6 +64,20 @@ const sql = postgres('postgres://username:password@host:port/database', {
 
 router(app, pool, pool2, sql);
 
-app.listen(port, hostname, () => {
-    console.log(`Server running at http://${hostname}:${port}/`);
+const setUpFastify = () => {
+    app.addContentTypeParser('application/json', {parseAs: 'buffer'}, function (req, body, done) {
+            try {
+                done(null, JSON.parse(body.toString('utf-8')))
+            } catch (e) {
+                done(null, '')
+            }
+        }
+    )
+}
+
+app.listen(port, hostname, (err, address) => {
+    if (err) throw err
+    console.log(`Server running at http://${address}/`);
 });
+
+setUpFastify()

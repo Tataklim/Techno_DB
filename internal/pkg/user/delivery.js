@@ -21,7 +21,7 @@ export default class UserDelivery {
      * @param {Object} request
      * @param {Object} response
      */
-    createUser(request, response) {
+    createUser(request, reply) {
         const user = userModel(
             request.params.nickname,
             request.body.fullname,
@@ -32,18 +32,18 @@ export default class UserDelivery {
             .then((result) => {
                 switch (result.type) {
                 case STATUSES.SUCCESS:
-                    response.status(201).send(result.body);
+                    reply.status(201).send(result.body);
                     break;
                 case STATUSES.DUPLICATION:
-                    response.status(409).send(result.body);
+                    reply.status(409).send(result.body);
                     break;
                 default:
-                    response.status(500);
+                    reply.status(500);
                     break;
                 }
             })
             .catch((error) => {
-                response.status(500);
+                reply.status(500);
             });
     }
 

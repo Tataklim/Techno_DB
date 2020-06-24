@@ -12,71 +12,71 @@ export const router = (app, pool, pool2, sql) => {
     const postDelivery = new PostDelivery(pool, sql);
     const serviceDelivery = new ServiceDelivery(pool2);
 
-    app.get(API + '/service/status', (request, response) => {
-        serviceDelivery.getData(request, response);
+    app.get(API + '/service/status', (request, reply) => {
+        serviceDelivery.getData(request, reply);
     });
 
-    app.post(API + '/service/clear', (request, response) => {
-        serviceDelivery.clear(request, response);
+    app.post(API + '/service/clear', (request, reply) => {
+        serviceDelivery.clear(request, reply);
     });
 
-    app.post(API + '/user/:nickname/create', (request, response) => {
-        userDelivery.createUser(request, response);
+    app.post(API + '/user/:nickname/create', (request, reply) => {
+        userDelivery.createUser(request, reply);
     });
 
-    app.get(API + '/user/:nickname/profile', (request, response) => {
-        userDelivery.getUser(request, response);
+    app.get(API + '/user/:nickname/profile', (request, reply) => {
+        userDelivery.getUser(request, reply);
     });
 
-    app.post(API + '/user/:nickname/profile', (request, response) => {
-        userDelivery.updateUser(request, response);
+    app.post(API + '/user/:nickname/profile', (request, reply) => {
+        userDelivery.updateUser(request, reply);
     });
 
-    app.post(API + '/forum/create', (request, response) => {
-        forumDelivery.createForum(request, response);
+    app.post(API + '/forum/create', (request, reply) => {
+        forumDelivery.createForum(request, reply);
     });
 
-    app.get(API + '/forum/:slug/details', (request, response) => {
-        forumDelivery.getForum(request, response);
+    app.get(API + '/forum/:slug/details', (request, reply) => {
+        forumDelivery.getForum(request, reply);
     });
 
-    app.post(API + '/forum/:forum/create', (request, response) => {
-        threadDelivery.createThread(request, response);
+    app.post(API + '/forum/:forum/create', (request, reply) => {
+        threadDelivery.createThread(request, reply);
     });
 
-    app.get(API + '/forum/:slug/threads', (request, response) => {
-        threadDelivery.getThreadList(request, response);
+    app.get(API + '/forum/:slug/threads', (request, reply) => {
+        threadDelivery.getThreadList(request, reply);
     });
 
-    app.get(API + '/forum/:slug/users', (request, response) => {
-        forumDelivery.getUserList(request, response);
+    app.get(API + '/forum/:slug/users', (request, reply) => {
+        forumDelivery.getUserList(request, reply);
     });
 
-    app.get(API + '/thread/:data/details', (request, response) => {
-        threadDelivery.getThread(request, response);
+    app.get(API + '/thread/:data/details', (request, reply) => {
+        threadDelivery.getThread(request, reply);
     });
 
-    app.post(API + '/thread/:thread/details', (request, response) => {
-        threadDelivery.updateThread(request, response);
+    app.post(API + '/thread/:thread/details', (request, reply) => {
+        threadDelivery.updateThread(request, reply);
     });
 
-    app.post(API + '/thread/:thread/create', (request, response) => {
-        postDelivery.createPost(request, response);
+    app.post(API + '/thread/:thread/create', (request, reply) => {
+        postDelivery.createPost(request, reply);
     });
 
-    app.post(API + '/thread/:thread/vote', (request, response) => {
-        threadDelivery.vote(request, response);
+    app.post(API + '/thread/:thread/vote', (request, reply) => {
+        threadDelivery.vote(request, reply);
     });
 
-    app.get(API + '/thread/:thread/posts', (request, response) => {
-        postDelivery.getPostList(request, response);
+    app.get(API + '/thread/:thread/posts', (request, reply) => {
+        postDelivery.getPostList(request, reply);
     });
 
-    app.post(API + '/post/:id/details', (request, response) => {
-        postDelivery.updatePost(request, response);
+    app.post(API + '/post/:id/details', (request, reply) => {
+        postDelivery.updatePost(request, reply);
     });
 
-    app.get(API + '/post/:id/details', (request, response) => {
-        postDelivery.getPost(request, response);
+    app.get(API + '/post/:id/details', (request, reply) => {
+        postDelivery.getPost(request, reply);
     });
 };
