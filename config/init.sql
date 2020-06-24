@@ -135,16 +135,16 @@ EXECUTE procedure update_forum();
 
 create or replace function insert_vote() RETURNS trigger AS
 $tread_trigger$
-begin
+BEGIN
     if new.vote = true then
-        update thread set votes = votes + 1 where id = NEW.thread;
+        UPDATE thread SET votes = votes + 1 where id = NEW.thread;
     end if;
     if new.vote = false then
-        update thread set votes = votes - 1 where id = NEW.thread;
+        UPDATE thread SET votes = votes - 1 where id = NEW.thread;
     end if;
 
-    return NEW;
-end;
+    RETURN NEW;
+END;
 $tread_trigger$ LANGUAGE plpgsql;
 
 create trigger votes_trigger
@@ -155,16 +155,16 @@ EXECUTE procedure insert_vote();
 
 create or replace function change_vote() RETURNS trigger AS
 $tread_trigger$
-begin
+BEGIN
     if new.vote = true then
-        update thread set votes = votes + 2 where id = NEW.thread;
+        UPDATE thread SET votes = votes + 2 where id = NEW.thread;
     end if;
     if new.vote = false then
-        update thread set votes = votes - 2 where id = NEW.thread;
+        UPDATE thread SET votes = votes - 2 where id = NEW.thread;
     end if;
 
-    return NEW;
-end;
+    RETURN NEW;
+END;
 $tread_trigger$ LANGUAGE plpgsql;
 
 create trigger votes_change_trigger

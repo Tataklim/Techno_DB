@@ -30,22 +30,22 @@ export default class PostUseCase {
         const arr = [];
         const curDay = new Date();
         if (postList.length !== 0) {
-            const mod = (postModel(
-                postList[0].author,
-                postList[0].message,
-                thread,
-                postList[0].forum,
-                postList[0].parent,
-            ));
-            const threadData = await this.threadRepository.getThread({
-                slug: mod.threadSlug,
-                id: mod.threadID,
+            let threadID = undefined;
+            let threadSlug = undefined;
+            if (this.isInt(thread)) {
+                threadID = thread;
+            } else {
+                threadSlug = thread;
+            }
+            const threadData = await this.threadRepository.getThreadIDForum({
+                id: threadID,
+                slug: threadSlug,
             });
             if (threadData.type === STATUSES.NOT_FOUND) {
                 return threadData;
             }
             for (const elem of postList) {
-                const postData = await this.getPostThread(thread, elem, threadData);
+                const postData = this.getPostThread(thread, elem, threadData);
                 if (postData.type !== undefined) {
                     return postData;
                 }
@@ -107,7 +107,7 @@ export default class PostUseCase {
      * @param {Object} elem
      * @param threadData
      */
-    async getPostThread(thread, elem, threadData) {
+    getPostThread(thread, elem, threadData) {
         const single = (postModel(
             elem.author,
             elem.message,

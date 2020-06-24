@@ -1,15 +1,16 @@
 import express from 'express';
 import bodyParser from 'body-parser';
-import db from 'pg';
-import {router} from './internal/app/router/router.js';
+import pkg from 'pg';
+const { native } = pkg;
 
+import {router} from './internal/app/router/router.js';
 const hostname = '0.0.0.0';
 const port = 5000;
 
 const app = express();
 app.use(bodyParser.json());
 
-const pool = new db.Pool({
+const pool = new native.Pool({
     user: 'docker',
     host: 'localhost',
     database: 'docker',

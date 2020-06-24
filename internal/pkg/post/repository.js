@@ -48,11 +48,9 @@ export default class RepositoryPost {
         if (text === undefined) {
             return responseModel(STATUSES.SUCCESS, await this.getPost(id));
         }
-        let str = 'UPDATE post SET message = $1, "isEdited" = true WHERE id = $2 ' +
-            'RETURNING author, created, forum, id, "isEdited", message, parent, thread;';
+        let str = 'UPDATE post SET message = $1, "isEdited" = true WHERE id = $2 RETURNING author, created, forum, id, "isEdited", message, parent, thread;';
         if (text === prevText) {
-            str = 'UPDATE post SET message = $1 WHERE id = $2 ' +
-                'RETURNING author, created, forum, id, "isEdited", message, parent, thread;';
+            str = 'UPDATE post SET message = $1 WHERE id = $2 RETURNING author, created, forum, id, "isEdited", message, parent, thread;';
         }
         const res = await query(this.pool, str, [
             text,

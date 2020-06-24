@@ -87,6 +87,24 @@ export default class ThreadRepository {
         return responseModel(STATUSES.SUCCESS, res);
     }
 
+    /**
+     * Thread creation
+     * @param {Object} thread
+     * @return {Object}
+     */
+    async getThreadIDForum(thread) {
+        let res;
+        if (thread.id === undefined) {
+            res = await this._getThreadIDForumBySlug(thread);
+        } else {
+            res = await this._getThreadIDForumByID(thread);
+        }
+        if (res === false) {
+            return responseModel(STATUSES.NOT_FOUND, 'There isnt thread with this data');
+        }
+        return responseModel(STATUSES.SUCCESS, res);
+    }
+
     /** Get slug list
      * @param {String} slug
      * @param {Object} params
@@ -159,8 +177,20 @@ export default class ThreadRepository {
         if (thread.slug === undefined) {
             return false;
         }
-        const str = 'SELECT id, forum, author, title, message, slug, created, votes' +
-            ' FROM thread WHERE slug = $1';
+        const str = 'SELECT id, forum, author, title, message, slug, created, votes FROM thread WHERE slug = $1';
+        const res = await query(this.pool, str, [
+            thread.slug.toLowerCase(),
+        ]);
+        return res.rowCount === 0 ? false : res.rows[0];
+    }
+
+    /**
+     * Check if exists by slug
+     * @param {Object} thread
+     * @return {Object}
+     */
+    async _getThreadIDForumBySlug(thread) {
+        const str = 'SELECT id, forum FROM thread WHERE slug = $1';
         const res = await query(this.pool, str, [
             thread.slug.toLowerCase(),
         ]);
@@ -176,13 +206,26 @@ export default class ThreadRepository {
         if (thread.id === undefined) {
             return false;
         }
-        const str = 'SELECT id, forum, author, title, message, slug, created, votes' +
-            ' FROM thread WHERE id = $1';
+        const str = 'SELECT id, forum, author, title, message, slug, created, votes FROM thread WHERE id = $1';
         const res = await query(this.pool, str, [
             thread.id,
         ]);
         return res.rowCount === 0 ? false : res.rows[0];
     }
+
+    /**
+     * Check if exists by id
+     * @param {Object} thread
+     * @return {Object}
+     */
+    async _getThreadIDForumByID(thread) {
+        const str = 'SELECT id, forum FROM thread WHERE id = $1';
+        const res = await query(this.pool, str, [
+            thread.id,
+        ]);
+        return res.rowCount === 0 ? false : res.rows[0];
+    }
+
 
     /**
      * Check if exists by id
