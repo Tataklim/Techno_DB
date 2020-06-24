@@ -36,4 +36,4 @@ RUN cd /DB && npm install
 
 EXPOSE 5000
 
-CMD service postgresql start && node --experimental-modules /DB/dist/app.bundle.js
+CMD service postgresql start && node /DB/dist/app.bundle.js
