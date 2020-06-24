@@ -18,7 +18,15 @@ const pool = new native.Pool({
     port: 5432,
 });
 
-router(app, pool);
+const pool2 = new pkg.Pool({
+    user: 'docker',
+    host: 'localhost',
+    database: 'docker',
+    password: 'docker',
+    port: 5432,
+});
+
+router(app, pool, pool2);
 
 app.listen(port, hostname, () => {
     console.log(`Server running at http://${hostname}:${port}/`);
